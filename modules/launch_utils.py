@@ -298,8 +298,7 @@ def prepare_environment():
         torch_command = os.environ.get('TORCH_COMMAND', "pip install torch==2.0.0 torchvision==0.15.1 torch-directml")
 
     requirements_file = os.environ.get('REQS_FILE', "requirements_onnx.txt" if args.onnx or args.olive else "requirements_versions.txt")
-    requirements_file_onnx = os.environ.get('REQS_FILE', "requirements_onnx.txt")
-    requirements_file_olive = os.environ.get('REQS_FILE', "requirements_olive.txt")
+    requirements_file_olive = "requirements_olive.txt"
 
     xformers_package = os.environ.get('XFORMERS_PACKAGE', 'xformers==0.0.20')
     gfpgan_package = os.environ.get('GFPGAN_PACKAGE', "https://github.com/TencentARC/GFPGAN/archive/8d2447a2d918f8eba5a4a01463fd48e45126a379.zip")
@@ -379,11 +378,7 @@ def prepare_environment():
     if not requirements_met(requirements_file):
         run_pip(f"install -r \"{requirements_file}\"", "requirements")
 
-    if not is_installed("diffusers"):
-        run_pip("install diffusers", "diffusers")
-
     if args.onnx or args.olive:
-        run_pip(f"install -r \"{requirements_file_onnx}\"", "requirements for ONNX")
         try:
             import onnxruntime
             attr_check = onnxruntime.SessionOptions
