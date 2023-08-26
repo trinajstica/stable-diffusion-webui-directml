@@ -296,8 +296,8 @@ def prepare_environment():
         torch_command = os.environ.get('TORCH_COMMAND', "pip install torch==2.0.1 torchvision==0.15.2 --extra-index-url https://download.pytorch.org/whl/rocm5.4.2")
     if args.backend == 'directml':
         torch_command = os.environ.get('TORCH_COMMAND', "pip install torch==2.0.0 torchvision==0.15.1 torch-directml")
-    
-    requirements_file = os.environ.get('REQS_FILE', "requirements_versions.txt")
+
+    requirements_file = os.environ.get('REQS_FILE', "requirements_onnx.txt" if args.onnx or args.olive else "requirements_versions.txt")
     requirements_file_onnx = os.environ.get('REQS_FILE', "requirements_onnx.txt")
     requirements_file_olive = os.environ.get('REQS_FILE', "requirements_olive.txt")
 
