@@ -378,6 +378,9 @@ def prepare_environment():
     if not requirements_met(requirements_file):
         run_pip(f"install -r \"{requirements_file}\"", "requirements")
 
+    if not is_installed("diffusers"):
+        run_pip("install diffusers", "diffusers")
+
     if args.onnx or args.olive:
         try:
             import onnxruntime
@@ -398,14 +401,14 @@ def prepare_environment():
             else:
                 run_pip("install --no-deps onnxruntime-gpu", "onnxruntime-gpu")
 
-    if args.olive:
-        if args.backend != 'directml':
-            print(f"Olive optimization requires DirectML as a backend, but you have: '{args.backend}'. Try again with '--backend directml'.")
-            exit(0)
-        print("WARNING! Because Olive optimization does not support torch 2.0, some packages will be downgraded and it can occur version mismatches between packages. (Strongly recommend to create another virtual environment to run Olive)")
-        if not is_installed("olive-ai"):
-            run_pip("install olive-ai[directml]", "Olive")
-        run_pip(f"install -r \"{requirements_file_olive}\"", "requirements for Olive")
+        if args.olive:
+            if args.backend != 'directml':
+                print(f"Olive optimization requires DirectML as a backend, but you have: '{args.backend}'. Try again with '--backend directml'.")
+                exit(0)
+            print("WARNING! Because Olive optimization does not support torch 2.0, some packages will be downgraded and it can occur version mismatches between packages. (Strongly recommend to create another virtual environment to run Olive)")
+            if not is_installed("olive-ai"):
+                run_pip("install olive-ai[directml]", "Olive")
+            run_pip(f"install -r \"{requirements_file_olive}\"", "requirements for Olive")
 
     run_extensions_installers(settings_file=args.ui_settings_file)
 
