@@ -378,9 +378,6 @@ def prepare_environment():
     if not requirements_met(requirements_file):
         run_pip(f"install -r \"{requirements_file}\"", "requirements")
 
-    if not is_installed("diffusers"):
-        run_pip("install diffusers", "diffusers")
-
     if args.onnx or args.olive:
         try:
             import onnxruntime
