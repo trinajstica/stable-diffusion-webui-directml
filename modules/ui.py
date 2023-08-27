@@ -1211,7 +1211,7 @@ def create_ui():
                             olive_html_from_ckpt = gr.HTML("")
 
                         with gr.Tab(label="Optimize ONNX model"):
-                            olive_onnx_model_id = gr.Textbox(label='ONNX Model ID', value="stable-diffusion-v1-5", elem_id="olive_onnx_model_id")
+                            olive_onnx_model_id = gr.Textbox(label='ONNX Model ID', value="runwayml/stable-diffusion-v1-5", elem_id="olive_onnx_model_id")
                             olive_onnx_vae = gr.Textbox(label='VAE Source Model ID', value="", elem_id="olive_onnx_vae", info="The VAE from this model will be used. (empty for default)")
                             olive_onnx_vae_subfolder = gr.Textbox(label='VAE Source Subfolder', value="vae", elem_id="olive_ckpt_vae_subfolder", info="The name of directory which has config and binary of the VAE. (empty for root)")
                             olive_onnx_indir = gr.Textbox(label='Input folder', value="stable-diffusion-v1-5", elem_id="olive_onnx_indir", info="If this folder exists, Olive will load and optimize model from it. Otherwise, download and optimize model on it.")
