@@ -14,11 +14,9 @@ class ONNXStableDiffusionXLModel(BaseONNXModel[ORTStableDiffusionXLPipeline, ORT
         self._sess_options.add_free_dimension_override_by_name("unet_time_ids_size", 6)
 
     def create_txt2img_pipeline(self, sampler: SamplerData) -> ORTStableDiffusionXLPipeline:
-        provider_options = dict()
-        provider_options["device_id"] = self.device.index
         return ORTStableDiffusionXLPipeline.from_pretrained(
             self.path,
-            provider=("DmlExecutionProvider" if shared.cmd_opts.backend == "directml" else "CUDAExecutionProvider", provider_options),
+            provider="DmlExecutionProvider" if shared.cmd_opts.backend == "directml" else "CUDAExecutionProvider",
             scheduler=sampler.constructor.from_pretrained(self.path, subfolder="scheduler"),
             sess_options=self._sess_options,
             local_files_only=True,
@@ -27,11 +25,9 @@ class ONNXStableDiffusionXLModel(BaseONNXModel[ORTStableDiffusionXLPipeline, ORT
         )
 
     def create_img2img_pipeline(self, sampler: SamplerData) -> ORTStableDiffusionXLImg2ImgPipeline:
-        provider_options = dict()
-        provider_options["device_id"] = self.device.index
         return ORTStableDiffusionXLImg2ImgPipeline.from_pretrained(
             self.path,
-            provider=("DmlExecutionProvider" if shared.cmd_opts.backend == "directml" else "CUDAExecutionProvider", provider_options),
+            provider="DmlExecutionProvider" if shared.cmd_opts.backend == "directml" else "CUDAExecutionProvider",
             scheduler=sampler.constructor.from_pretrained(self.path, subfolder="scheduler"),
             sess_options=self._sess_options,
             local_files_only=True,
