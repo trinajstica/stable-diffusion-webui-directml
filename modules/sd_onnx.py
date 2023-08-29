@@ -90,6 +90,16 @@ class BaseONNXModel(Generic[T2I, I2I], metaclass=ABCMeta):
     def set_mem_reuse(self, enabled: bool):
         self._sess_options.enable_mem_reuse = enabled
 
+    def get_pipeline_config(self) -> dict:
+        return {
+            "local_files_only": True,
+            "torch_dtype": self.dtype,
+            "offload_state_dict": shared.opts.offload_state_dict,
+        }
+
+    def create_orm(self, submodel: str) -> diffusers.OnnxRuntimeModel:
+        return diffusers.OnnxRuntimeModel.from_pretrained(self.path / submodel, provider=device_map[submodel])
+
     def create_pipeline(self, processing, sampler: SamplerData) -> Union[T2I, I2I]:
         if isinstance(processing, ONNXStableDiffusionProcessingTxt2Img):
             return self.create_txt2img_pipeline(sampler)

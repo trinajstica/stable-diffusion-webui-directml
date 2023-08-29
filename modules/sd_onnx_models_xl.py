@@ -1,8 +1,9 @@
+from transformers import CLIPTokenizer, CLIPImageProcessor
 from optimum.onnxruntime import ORTStableDiffusionXLPipeline, ORTStableDiffusionXLImg2ImgPipeline
 
 from modules import shared
 from modules.sd_samplers_common import SamplerData
-from modules.sd_onnx import BaseONNXModel
+from modules.sd_onnx import BaseONNXModel, device_map
 
 class ONNXStableDiffusionXLModel(BaseONNXModel[ORTStableDiffusionXLPipeline, ORTStableDiffusionXLImg2ImgPipeline]):
     def __init__(self, dirname: str, is_optimized: bool = False):
@@ -14,23 +15,45 @@ class ONNXStableDiffusionXLModel(BaseONNXModel[ORTStableDiffusionXLPipeline, ORT
         self._sess_options.add_free_dimension_override_by_name("unet_time_ids_size", 6)
 
     def create_txt2img_pipeline(self, sampler: SamplerData) -> ORTStableDiffusionXLPipeline:
-        return ORTStableDiffusionXLPipeline.from_pretrained(
-            self.path,
-            provider="DmlExecutionProvider" if shared.cmd_opts.backend == "directml" else "CUDAExecutionProvider",
+        if "text_encoder" not in device_map:
+            return ORTStableDiffusionXLPipeline.from_pretrained(
+                self.path,
+                provider="DmlExecutionProvider" if shared.cmd_opts.backend == "directml" else "CUDAExecutionProvider",
+                scheduler=sampler.constructor.from_pretrained(self.path, subfolder="scheduler"),
+                sess_options=self._sess_options,
+                **self.get_pipeline_config(),
+            )
+        return ORTStableDiffusionXLPipeline(
+            text_encoder_session=self.create_orm("text_encoder"),
+            text_encoder_2_session=self.create_orm("text_encoder_2"),
+            unet_session=self.create_orm("unet"),
+            vae_decoder_session=self.create_orm("vae_decoder"),
+            vae_encoder_session=self.create_orm("vae_encoder"),
+            tokenizer=CLIPTokenizer.from_pretrained(self.path / "tokenizer"),
+            tokenizer_2=CLIPTokenizer.from_pretrained(self.path / "tokenizer_2"),
             scheduler=sampler.constructor.from_pretrained(self.path, subfolder="scheduler"),
-            sess_options=self._sess_options,
-            local_files_only=True,
-            torch_dtype=self.dtype,
-            offload_state_dict=shared.opts.offload_state_dict,
+            feature_extractor=CLIPImageProcessor.from_pretrained(self.path / "feature_extractor"),
+            config=self.get_pipeline_config(),
         )
 
     def create_img2img_pipeline(self, sampler: SamplerData) -> ORTStableDiffusionXLImg2ImgPipeline:
-        return ORTStableDiffusionXLImg2ImgPipeline.from_pretrained(
-            self.path,
-            provider="DmlExecutionProvider" if shared.cmd_opts.backend == "directml" else "CUDAExecutionProvider",
+        if "text_encoder" not in device_map:
+            return ORTStableDiffusionXLImg2ImgPipeline.from_pretrained(
+                self.path,
+                provider="DmlExecutionProvider" if shared.cmd_opts.backend == "directml" else "CUDAExecutionProvider",
+                scheduler=sampler.constructor.from_pretrained(self.path, subfolder="scheduler"),
+                sess_options=self._sess_options,
+                **self.get_pipeline_config(),
+            )
+        return ORTStableDiffusionXLImg2ImgPipeline(
+            text_encoder_session=self.create_orm("text_encoder"),
+            text_encoder_2_session=self.create_orm("text_encoder_2"),
+            unet_session=self.create_orm("unet"),
+            vae_decoder_session=self.create_orm("vae_decoder"),
+            vae_encoder_session=self.create_orm("vae_encoder"),
+            tokenizer=CLIPTokenizer.from_pretrained(self.path / "tokenizer"),
+            tokenizer_2=CLIPTokenizer.from_pretrained(self.path / "tokenizer_2"),
             scheduler=sampler.constructor.from_pretrained(self.path, subfolder="scheduler"),
-            sess_options=self._sess_options,
-            local_files_only=True,
-            torch_dtype=self.dtype,
-            offload_state_dict=shared.opts.offload_state_dict,
+            feature_extractor=CLIPImageProcessor.from_pretrained(self.path / "feature_extractor"),
+            config=self.get_pipeline_config(),
         )
