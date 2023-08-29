@@ -5,7 +5,7 @@ import numpy as np
 import hashlib
 import diffusers
 from abc import ABCMeta, abstractmethod
-from typing import TypeVar, Generic, List, Dict, Any
+from typing import TypeVar, Generic, Union, List, Dict, Any
 from pathlib import Path
 from PIL import Image, ImageOps
 import onnxruntime as ort
@@ -54,6 +54,7 @@ class BaseONNXModel(Generic[T2I, I2I], metaclass=ABCMeta):
     sd_model_hash: None = None
     cond_stage_model: torch.nn.Module = torch.nn.Module()
     cond_stage_key: str = ""
+    pipeline: diffusers.DiffusionPipeline = None
     vae: None = None
 
     dtype: torch.dtype = devices.dtype
@@ -74,9 +75,9 @@ class BaseONNXModel(Generic[T2I, I2I], metaclass=ABCMeta):
 
         for key in kwargs:
             if key == "dtype":
-                self.dtype = kwargs[key]
+                self.dtype = kwargs["dtype"]
             if key == "device":
-                self.device = kwargs[key]
+                self.device = kwargs["device"]
 
         return self
 
@@ -89,6 +90,12 @@ class BaseONNXModel(Generic[T2I, I2I], metaclass=ABCMeta):
     def set_mem_reuse(self, enabled: bool):
         self._sess_options.enable_mem_reuse = enabled
 
+    def create_pipeline(self, processing, sampler: SamplerData) -> Union[T2I, I2I]:
+        if isinstance(processing, ONNXStableDiffusionProcessingTxt2Img):
+            return self.create_txt2img_pipeline(sampler)
+        elif isinstance(processing, ONNXStableDiffusionProcessingImg2Img):
+            return self.create_img2img_pipeline(sampler)
+
     @abstractmethod
     def create_txt2img_pipeline(self, sampler: SamplerData) -> T2I:
         pass
@@ -99,7 +106,6 @@ class BaseONNXModel(Generic[T2I, I2I], metaclass=ABCMeta):
 
 class ONNXStableDiffusionProcessing(metaclass=ABCMeta):
     sd_model: BaseONNXModel[diffusers.DiffusionPipeline, diffusers.DiffusionPipeline]
-    pipeline: diffusers.DiffusionPipeline
     outpath_samples: str
     outpath_grids: str
     prompt: str
@@ -224,6 +230,17 @@ class ONNXStableDiffusionProcessing(metaclass=ABCMeta):
             self.sd_model.add_free_dimension_override_by_name("unet_text_embeds_size", self.height + 256)
             self.sd_model.add_free_dimension_override_by_name("unet_time_ids_batch", self.batch_size * 2)
 
+    def _create_pipeline(self):
+        return self.sd_model.create_pipeline(self, self.sampler)
+
+    @property
+    def pipeline(self) -> diffusers.DiffusionPipeline:
+        if shared.opts.reload_model_before_each_generation:
+            self.sd_model.pipeline = None
+        elif self.sd_model.pipeline is None:
+            self.sd_model.pipeline = self._create_pipeline()
+        return self.sd_model.pipeline or self._create_pipeline()
+
     @abstractmethod
     def forward(self) -> Processed:
         pass
@@ -286,9 +303,6 @@ class ONNXStableDiffusionProcessingTxt2Img(ONNXStableDiffusionProcessing):
         self.hr_c = None
         self.hr_uc = None
 
-        if not shared.opts.reload_model_before_each_generation:
-            self.pipeline = self.sd_model.create_txt2img_pipeline(self.sampler)
-
     def forward(self) -> Processed:
         if type(self.prompt) == list:
             assert(len(self.prompt) > 0)
@@ -317,13 +331,6 @@ class ONNXStableDiffusionProcessingTxt2Img(ONNXStableDiffusionProcessing):
         output_images = []
 
         for i in range(0, self.n_iter):
-            if shared.opts.reload_model_before_each_generation:
-                self.sd_model = None
-                self.pipeline = None
-                gc.collect()
-                torch.cuda.empty_cache()
-                self.sd_model = reload_model_weights()
-                self.pipeline = self.sd_model.create_txt2img_pipeline(self.sampler)
             result = self.pipeline(self,
                 prompt=self.all_prompts,
                 negative_prompt=self.all_negative_prompts,
@@ -403,9 +410,6 @@ class ONNXStableDiffusionProcessingImg2Img(ONNXStableDiffusionProcessing):
         self.mask = None
         self.nmask = None
         self.image_conditioning = None
-
-        if not shared.opts.reload_model_before_each_generation:
-            self.pipeline = self.sd_model.create_img2img_pipeline(self.sampler)
 
     def forward(self) -> Processed:
         crop_region = None
@@ -533,13 +537,6 @@ class ONNXStableDiffusionProcessingImg2Img(ONNXStableDiffusionProcessing):
         output_images = []
 
         for i in range(0, self.n_iter):
-            if shared.opts.reload_model_before_each_generation:
-                self.sd_model = None
-                self.pipeline = None
-                gc.collect()
-                torch.cuda.empty_cache()
-                self.sd_model = reload_model_weights()
-                self.pipeline = self.sd_model.create_img2img_pipeline(self.sampler)
             result = self.pipeline(self,
                 image=image,
                 prompt=self.all_prompts,
