@@ -12,7 +12,6 @@ import onnxruntime as ort
 
 from modules import shared, images, devices, masking
 from modules.sd_onnx_hijack import do_hijack
-from modules.sd_models import reload_model_weights
 from modules.sd_samplers import find_sampler_config
 from modules.sd_samplers_common import SamplerData
 from modules.paths_internal import models_path
@@ -21,26 +20,6 @@ from modules.processing import Processed, get_fixed_seed, setup_color_correction
 do_hijack()
 
 device_map = dict()
-
-def save_device_map(text_encoder_ep: str, text_encoder_id: str, text_encoder_2_ep: str, text_encoder_2_id: str, unet_ep: str, unet_id: str, vae_decoder_ep: str, vae_decoder_id: str, vae_encoder_ep: str, vae_encoder_id: str):
-    global device_map
-    device_map["text_encoder"] = (text_encoder_ep, {
-        "device_id": int(text_encoder_id)
-    })
-    device_map["text_encoder_2"] = (text_encoder_2_ep, {
-        "device_id": int(text_encoder_2_id)
-    })
-    device_map["unet"] = (unet_ep, {
-        "device_id": int(unet_id)
-    })
-    device_map["vae_decoder"] = (vae_decoder_ep, {
-        "device_id": int(vae_decoder_id)
-    })
-    device_map["vae_encoder"] = (vae_encoder_ep, {
-        "device_id": int(vae_encoder_id)
-    })
-
-    return ["Applied"]
 
 T2I = TypeVar("T2I")
 I2I = TypeVar("I2I")
