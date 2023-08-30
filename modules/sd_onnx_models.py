@@ -1,5 +1,4 @@
 from diffusers import OnnxStableDiffusionPipeline, OnnxStableDiffusionImg2ImgPipeline
-from transformers import CLIPTokenizer, CLIPImageProcessor
 
 from modules import shared
 from modules.sd_samplers_common import SamplerData
@@ -25,13 +24,13 @@ class ONNXStableDiffusionModel(BaseONNXModel[OnnxStableDiffusionPipeline, OnnxSt
             )
         return OnnxStableDiffusionPipeline(
             safety_checker=None,
-            text_encoder=self.create_orm("text_encoder"),
-            unet=self.create_orm("unet"),
-            vae_decoder=self.create_orm("vae_decoder"),
-            vae_encoder=self.create_orm("vae_encoder"),
-            tokenizer=CLIPTokenizer.from_pretrained(self.path / "tokenizer"),
+            text_encoder=self.load_orm("text_encoder"),
+            unet=self.load_orm("unet"),
+            vae_decoder=self.load_orm("vae_decoder"),
+            vae_encoder=self.load_orm("vae_encoder"),
+            tokenizer=self.load_tokenizer("tokenizer"),
             scheduler=sampler.constructor.from_pretrained(self.path, subfolder="scheduler"),
-            feature_extractor=CLIPImageProcessor.from_pretrained(self.path / "feature_extractor"),
+            feature_extractor=self.load_image_processor("feature_extractor"),
             requires_safety_checker=False,
         )
 
@@ -48,12 +47,12 @@ class ONNXStableDiffusionModel(BaseONNXModel[OnnxStableDiffusionPipeline, OnnxSt
             )
         return OnnxStableDiffusionImg2ImgPipeline(
             safety_checker=None,
-            text_encoder=self.create_orm("text_encoder"),
-            unet=self.create_orm("unet"),
-            vae_decoder=self.create_orm("vae_decoder"),
-            vae_encoder=self.create_orm("vae_encoder"),
-            tokenizer=CLIPTokenizer.from_pretrained(self.path / "tokenizer"),
+            text_encoder=self.load_orm("text_encoder"),
+            unet=self.load_orm("unet"),
+            vae_decoder=self.load_orm("vae_decoder"),
+            vae_encoder=self.load_orm("vae_encoder"),
+            tokenizer=self.load_tokenizer("tokenizer"),
             scheduler=sampler.constructor.from_pretrained(self.path, subfolder="scheduler"),
-            feature_extractor=CLIPImageProcessor.from_pretrained(self.path / "feature_extractor"),
+            feature_extractor=self.load_image_processor("feature_extractor"),
             requires_safety_checker=False,
         )

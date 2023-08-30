@@ -3,7 +3,9 @@ import cv2
 import torch
 import numpy as np
 import hashlib
+import os.path
 import diffusers
+from transformers import CLIPTokenizer, CLIPImageProcessor
 from abc import ABCMeta, abstractmethod
 from typing import TypeVar, Generic, Union, List, Dict, Any
 from pathlib import Path
@@ -76,8 +78,14 @@ class BaseONNXModel(Generic[T2I, I2I], metaclass=ABCMeta):
             "offload_state_dict": shared.opts.offload_state_dict,
         }
 
-    def create_orm(self, submodel: str) -> diffusers.OnnxRuntimeModel:
-        return diffusers.OnnxRuntimeModel.from_pretrained(self.path / submodel, provider=device_map[submodel])
+    def load_orm(self, submodel: str) -> Union[diffusers.OnnxRuntimeModel, None]:
+        return diffusers.OnnxRuntimeModel.from_pretrained(self.path / submodel, provider=device_map[submodel]) if os.path.isdir(self.path / submodel) else None
+
+    def load_tokenizer(self, name: str) -> Union[CLIPTokenizer, None]:
+        return CLIPTokenizer.from_pretrained(self.path / name) if os.path.isdir(self.path / name) else None
+
+    def load_image_processor(self, name: str) -> Union[CLIPImageProcessor, None]:
+        return CLIPImageProcessor.from_pretrained(self.path / name) if os.path.isdir(self.path / name) else None
 
     def create_pipeline(self, processing, sampler: SamplerData) -> Union[T2I, I2I]:
         if isinstance(processing, ONNXStableDiffusionProcessingTxt2Img):
@@ -291,6 +299,9 @@ class ONNXStableDiffusionProcessingTxt2Img(ONNXStableDiffusionProcessing):
         self.cached_hr_c = list()
         self.hr_c = None
         self.hr_uc = None
+
+        if self.sd_model.is_sdxl:
+            self.all_negative_prompts = None
 
     def forward(self) -> Processed:
         if type(self.prompt) == list:
