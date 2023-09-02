@@ -501,20 +501,22 @@ class ONNXStableDiffusionProcessingImg2Img(ONNXStableDiffusionProcessing):
         image_mask = self.image_mask
 
         if image_mask is not None:
-            image_mask = image_mask.convert('L')
+            # image_mask is passed in as RGBA by Gradio to support alpha masks,
+            # but we still want to support binary masks.
+            image_mask = processing.create_binary_mask(image_mask)
 
             if self.inpainting_mask_invert:
                 image_mask = ImageOps.invert(image_mask)
 
             if self.mask_blur_x > 0:
                 np_mask = np.array(image_mask)
-                kernel_size = 2 * int(4 * self.mask_blur_x + 0.5) + 1
+                kernel_size = 2 * int(2.5 * self.mask_blur_x + 0.5) + 1
                 np_mask = cv2.GaussianBlur(np_mask, (kernel_size, 1), self.mask_blur_x)
                 image_mask = Image.fromarray(np_mask)
 
             if self.mask_blur_y > 0:
                 np_mask = np.array(image_mask)
-                kernel_size = 2 * int(4 * self.mask_blur_y + 0.5) + 1
+                kernel_size = 2 * int(2.5 * self.mask_blur_y + 0.5) + 1
                 np_mask = cv2.GaussianBlur(np_mask, (1, kernel_size), self.mask_blur_y)
                 image_mask = Image.fromarray(np_mask)
 
@@ -591,8 +593,7 @@ class ONNXStableDiffusionProcessingImg2Img(ONNXStableDiffusionProcessing):
         else:
             raise RuntimeError(f"bad number of images passed: {len(imgs)}; expecting {self.batch_size} or less")
 
-        image = torch.from_numpy(batch_images)
-        image = 2. * image - 1.
+        image = 2. * torch.from_numpy(batch_images) - 0.7878375
 
         if type(self.prompt) == list:
             assert(len(self.prompt) > 0)
