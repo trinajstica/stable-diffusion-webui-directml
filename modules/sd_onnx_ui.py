@@ -1,7 +1,7 @@
 from pathlib import Path
 
-from modules import sd_onnx
 from modules.paths_internal import models_path
+from modules.sd_onnx import device_map
 from modules.sd_onnx_utils import load_pipeline
 
 def download_from_huggingface(id: str, dest: str):
@@ -20,19 +20,19 @@ def download_from_huggingface(id: str, dest: str):
     return [f"Model saved: {path}"]
 
 def save_device_map(text_encoder_ep: str, text_encoder_id: str, text_encoder_2_ep: str, text_encoder_2_id: str, unet_ep: str, unet_id: str, vae_decoder_ep: str, vae_decoder_id: str, vae_encoder_ep: str, vae_encoder_id: str):
-    sd_onnx.device_map["text_encoder"] = (text_encoder_ep, {
+    device_map["text_encoder"] = (text_encoder_ep, {
         "device_id": int(text_encoder_id)
     })
-    sd_onnx.device_map["text_encoder_2"] = (text_encoder_2_ep, {
+    device_map["text_encoder_2"] = (text_encoder_2_ep, {
         "device_id": int(text_encoder_2_id)
     })
-    sd_onnx.device_map["unet"] = (unet_ep, {
+    device_map["unet"] = (unet_ep, {
         "device_id": int(unet_id)
     })
-    sd_onnx.device_map["vae_decoder"] = (vae_decoder_ep, {
+    device_map["vae_decoder"] = (vae_decoder_ep, {
         "device_id": int(vae_decoder_id)
     })
-    sd_onnx.device_map["vae_encoder"] = (vae_encoder_ep, {
+    device_map["vae_encoder"] = (vae_encoder_ep, {
         "device_id": int(vae_encoder_id)
     })
 

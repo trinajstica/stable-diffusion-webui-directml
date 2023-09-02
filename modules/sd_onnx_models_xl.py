@@ -5,9 +5,10 @@ from modules.sd_samplers_common import SamplerData
 from modules.sd_onnx import BaseONNXModel, device_map
 
 class ONNXStableDiffusionXLModel(BaseONNXModel[ORTStableDiffusionXLPipeline, ORTStableDiffusionXLImg2ImgPipeline]):
-    def __init__(self, dirname: str, is_optimized: bool = False):
-        super().__init__(dirname, is_optimized)
-        self.is_sdxl = True
+    is_sdxl = True
+
+    def __init__(self, dirname: str):
+        super().__init__(dirname)
         self._sess_options.add_free_dimension_override_by_name("unet_sample_channels", 4)
         self._sess_options.add_free_dimension_override_by_name("unet_time_batch", 1)
         self._sess_options.add_free_dimension_override_by_name("unet_hidden_sequence", 77)
