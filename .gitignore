@@ -39,3 +39,4 @@ notification.mp3
 /node_modules
 /package-lock.json
 /.coverage*
+webui-settings.bat
